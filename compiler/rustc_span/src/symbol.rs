@@ -43,6 +43,7 @@ symbols! {
         Fn:                 "fn",
         For:                "for",
         If:                 "if",
+        Unless:             "unless",
         Impl:               "impl",
         In:                 "in",
         Let:                "let",

@@ -1246,6 +1246,11 @@ pub fn noop_visit_expr<T: MutVisitor>(
             vis.visit_block(tr);
             visit_opt(fl, |fl| vis.visit_expr(fl));
         }
+        ExprKind::Unless(cond, tr, fl) => {
+            vis.visit_expr(cond);
+            vis.visit_block(tr);
+            visit_opt(fl, |fl| vis.visit_expr(fl));
+        }
         ExprKind::While(cond, body, label) => {
             vis.visit_expr(cond);
             vis.visit_block(body);

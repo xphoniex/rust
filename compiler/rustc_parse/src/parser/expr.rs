@@ -1116,6 +1116,8 @@ impl<'a> Parser<'a> {
             self.parse_closure_expr(attrs)
         } else if self.eat_keyword(kw::If) {
             self.parse_if_expr(attrs)
+        } else if self.eat_keyword(kw::Unless) {
+            self.parse_unless_expr(attrs)
         } else if self.check_keyword(kw::For) {
             if self.choose_generics_over_qpath(1) {
                 // NOTE(Centril, eddyb): DO NOT REMOVE! Beyond providing parser recovery,
@@ -1789,6 +1791,43 @@ impl<'a> Parser<'a> {
         };
         let els = if self.eat_keyword(kw::Else) { Some(self.parse_else_expr()?) } else { None };
         Ok(self.mk_expr(lo.to(self.prev_token.span), ExprKind::If(cond, thn, els), attrs))
+    }
+
+    /// Parses an `unless` expression (`unless` token already eaten).
+    fn parse_unless_expr(&mut self, attrs: AttrVec) -> PResult<'a, P<Expr>> {
+        let lo = self.prev_token.span;
+        let cond = self.parse_cond_expr()?;
+
+        // Verify that the parsed `unless` condition makes sense as a condition. If it is a block, then
+        // verify that the last statement is either an implicit return (no `;`) or an explicit
+        // return. This won't catch blocks with an explicit `return`, but that would be caught by
+        // the dead code lint.
+        let thn = if self.eat_keyword(kw::Else) || !cond.returns() {
+            self.error_missing_if_cond(lo, cond.span)
+        } else {
+            let attrs = self.parse_outer_attributes()?.take_for_recovery(); // For recovery.
+            let not_block = self.token != token::OpenDelim(token::Brace);
+            let block = self.parse_block().map_err(|mut err| {
+                if not_block {
+                    err.span_label(lo, "this `unless` expression has a condition, but no block");
+                    if let ExprKind::Binary(_, _, ref right) = cond.kind {
+                        if let ExprKind::Block(_, _) = right.kind {
+                            err.help("maybe you forgot the right operand of the condition?");
+                        }
+                    }
+                }
+                err
+            })?;
+            self.error_on_if_block_attrs(lo, false, block.span, &attrs);
+            block
+        };
+        let els = if self.eat_keyword(kw::Else) { Some(self.parse_else_expr()?) } else { None };
+        let neg_cond = self.mk_expr(
+            lo.to(self.prev_token.span),
+            self.mk_unary(UnOp::Not, cond),
+            AttrVec::new()
+        );
+        Ok(self.mk_expr(lo.to(neg_cond.span), ExprKind::If(neg_cond, thn, els), attrs))
     }
 
     fn error_missing_if_cond(&self, lo: Span, span: Span) -> P<ast::Block> {

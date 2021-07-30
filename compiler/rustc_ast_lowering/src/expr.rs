@@ -95,6 +95,29 @@ impl<'hir> LoweringContext<'_, 'hir> {
                     }
                     ExprKind::Paren(ref paren) => match paren.peel_parens().kind {
                         ExprKind::Let(ref pat, ref scrutinee) => {
+                            // A user has written `untill (let Some(x) = foo) {`, we want to avoid
+                            // confusing them with mentions of nightly features.
+                            // If this logic is changed, you will also likely need to touch
+                            // `unused::UnusedParens::check_expr`.
+                            self.if_let_expr_with_parens(cond, &paren.peel_parens());
+                            self.lower_expr_if_let(
+                                e.span,
+                                pat,
+                                scrutinee,
+                                then,
+                                else_opt.as_deref(),
+                            )
+                        }
+                        _ => self.lower_expr_if(cond, then, else_opt.as_deref()),
+                    },
+                    _ => self.lower_expr_if(cond, then, else_opt.as_deref()),
+                },
+                ExprKind::Unless(ref cond, ref then, ref else_opt) => match cond.kind {
+                    ExprKind::Let(ref pat, ref scrutinee) => {
+                        self.lower_expr_if_let(e.span, pat, scrutinee, then, else_opt.as_deref())
+                    }
+                    ExprKind::Paren(ref paren) => match paren.peel_parens().kind {
+                        ExprKind::Let(ref pat, ref scrutinee) => {
                             // A user has written `if (let Some(x) = foo) {`, we want to avoid
                             // confusing them with mentions of nightly features.
                             // If this logic is changed, you will also likely need to touch

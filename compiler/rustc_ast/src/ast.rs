@@ -1202,6 +1202,7 @@ impl Expr {
             ExprKind::Type(..) | ExprKind::Cast(..) => ExprPrecedence::Cast,
             ExprKind::Let(..) => ExprPrecedence::Let,
             ExprKind::If(..) => ExprPrecedence::If,
+            ExprKind::Unless(..) => ExprPrecedence::If,
             ExprKind::While(..) => ExprPrecedence::While,
             ExprKind::ForLoop(..) => ExprPrecedence::ForLoop,
             ExprKind::Loop(..) => ExprPrecedence::Loop,
@@ -1307,6 +1308,10 @@ pub enum ExprKind {
     ///
     /// `if expr { block } else { expr }`
     If(P<Expr>, P<Block>, Option<P<Expr>>),
+    /// An `unless` block
+    ///
+    /// `unless expr { block } else { expr }`
+    Unless(P<Expr>, P<Block>, Option<P<Expr>>),
     /// A while loop, with an optional label.
     ///
     /// `'label: while expr { block }`

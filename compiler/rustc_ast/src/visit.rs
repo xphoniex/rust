@@ -788,6 +788,11 @@ pub fn walk_expr<'a, V: Visitor<'a>>(visitor: &mut V, expression: &'a Expr) {
             visitor.visit_block(if_block);
             walk_list!(visitor, visit_expr, optional_else);
         }
+        ExprKind::Unless(ref head_expression, ref unless_block, ref optional_unless) => {
+            visitor.visit_expr(head_expression);
+            visitor.visit_block(unless_block);
+            walk_list!(visitor, visit_expr, optional_unless);
+        }
         ExprKind::While(ref subexpression, ref block, ref opt_label) => {
             walk_list!(visitor, visit_label, opt_label);
             visitor.visit_expr(subexpression);

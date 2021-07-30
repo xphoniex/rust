@@ -1925,6 +1925,9 @@ impl<'a> State<'a> {
             ast::ExprKind::If(ref test, ref blk, ref elseopt) => {
                 self.print_if(test, blk, elseopt.as_deref())
             }
+            ast::ExprKind::Unless(ref test, ref blk, ref elseopt) => {
+                self.print_if(test, blk, elseopt.as_deref())
+            }
             ast::ExprKind::While(ref test, ref blk, opt_label) => {
                 if let Some(label) = opt_label {
                     self.print_ident(label.ident);
